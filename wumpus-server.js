@@ -1,3 +1,11 @@
+ /**
+ * This game and all content in this file is licensed under the Attribution-Noncommercial-Share Alike 3.0 version of the Creative Commons License.
+ * The license be found at http://creativecommons.org/licenses/by-nc-sa/3.0/
+ * 
+ * GGJ 2013 Entry - "Hunt The Wumpus : Global Edition"
+ * http://globalgamejam.org/2013/hunt-wumpus-global-edition
+ */
+
 var net = require('net');
 var sys = require('sys');
 
@@ -5,7 +13,7 @@ var clients = [];
 var broadcasts = [];
 
 var WELCOME       = "\nWelcome to HUNT THE WUMPUS Global Edition!\nPlease enter your name: \n";
-var JOINED        = " joined the game!\n";
+var JOINED        = " joined the game!";
 var LEFT          = " left the game.\n";
 var INTRO         = 
 "===============================================================================\n\n" +
@@ -16,7 +24,15 @@ var INTRO         =
 ";BCOMMANDS:\n\n" +
 ";YMOVE <DIRECTION>;W  - Move in the specified direction.\n" +
 ";YSHOOT <DIRECTION>;W - Shoot in the specified direction.\n\n" +
-"You may also use the ;YARROW KEYS;W to move and ;YSHIFT + ARROW KEYS;W to shoot.\n\n" +
+"Or use the ;YARROW KEYS;W to move and ;YSHIFT/CTRL + ARROW KEYS;W to shoot.\n" +
+"Press ;YF1;W to view the scoreboard (scores updated at end of round).\n\n" +
+";BHINTS:\n\n" +
+"- The ;RWumpus;W can move!\n" +
+"- Try playing with headphones - some sound effects are positional...\n" +
+"- ;PPro;W players shut their eyes. :)\n\n" +
+";BCREDITS:\n\n" +
+"Authors: Peter D Bell, Kevin Smith, Martyn Rendall, Callum Dryden\n" +
+";Ghttp://globalgamejam.org/2013/hunt-wumpus-global-edition\n\n" +
 "===============================================================================\n\n" +
 "Press enter to begin...\n";
 var ROOM_DESC         = "You are in a dark cave in the lair.";
@@ -47,6 +63,10 @@ var WUMPUS_HERE       =
 var WUMPUS_SNEAK      =
 "You hear a sudden noise and turn around, but it is too late. This time, the\n" +
 ";RWumpus;W has hunted ;Yyou;W!";
+var STARTING_NEXT_ROUND = "\n;GStarting the ;Ynext round;G! (;YF1;G to review scores)\n\n";
+var SCORES_TITLE      = 
+";B================================;YSCORES;B===============================\n";
+var SCORES_PADDING    = "                             ";
 
 var S_HEARTBEAT_LOUD  = 0;
 var S_HEARTBEAT_MED   = 1;
@@ -68,6 +88,7 @@ var SOUND = ";S";
 var ROOM_RESET = ";Z";
 var CLS = ";U";
 var RICH_TAG = "@#";
+var SB = ";T";
 
 var DIRS = ['NORTH', 'SOUTH', 'EAST', 'WEST'];
 var ROOM_MAX_X = 3;
@@ -91,12 +112,11 @@ net.createServer( function (client) {
     if (clients.indexOf(client) == -1) {
       if (!client.ready) {
         dynamicAdjust();
-        
         init(client, data);
         send(INTRO, client);
         client.ready = true;
       } else {
-        queueBroadcast(C_Y + client.name + C_W + JOINED, client);
+        queueBroadcast(C_Y + client.name + C_W + JOINED + ' ('+ (clients.length + 1) +' players connected)', client);
         joinGame(client);
       }
     } else {
@@ -116,10 +136,11 @@ net.createServer( function (client) {
             // everything else after all client commands processed
             var shooter = checkShot(wumpus);
             if (shooter != false) {
-              send('You' + SHOT_THE_WUMPUS + C_B + ' Way to go!', shooter);
-              broadcast(C_Y + shooter.name + C_W + SHOT_THE_WUMPUS, shooter);
+              shooter.score = shooter.score + 7;
               broadcast(SOUND + S_GUNSHOT);
               broadcast(SOUND + S_WUMPUS_DEATH);
+              send(SB + 'You' + SHOT_THE_WUMPUS + C_B + ' Way to go!', shooter);
+              broadcast(SB + C_Y + shooter.name + C_W + SHOT_THE_WUMPUS, shooter);
               resetGame();
             } else {
               for (var i in clients) {
@@ -150,21 +171,21 @@ net.createServer( function (client) {
   });
   
   client.on('end', function () {
-    clients.splice(clients.indexOf(client), 1);
     console.log('Player ' + client.name + ' (' + client.addr + ') diconnected');
-    if ( !(typeof(client.name) == "undefined") ) {
+    if ( clients.indexOf(client) != -1 ) {
+      clients.splice(clients.indexOf(client), 1);
       queueBroadcast(C_Y + client.name + C_W + LEFT);
-    }
-    client = undefined;
-    if (checkClientCommands()) {
-      for (var i in clients) {
-        var c = clients[i];
-        if (!c.dead) {
-          processCommands(c);
+      if (checkClientCommands()) {
+        for (var i in clients) {
+          var c = clients[i];
+          if (!c.dead) {
+            processCommands(c);
+          }
         }
       }
+      dynamicAdjust();
     }
-    dynamicAdjust();
+    client = undefined;
   });
   
   function dynamicAdjust() {
@@ -278,6 +299,7 @@ net.createServer( function (client) {
       client.name = name;
       client.isUsingRichClient = false;
     }
+    client.score = 0;
     console.log('Client ' + client.addr + ' identified as ' +
         client.name + ', using rich client: ' + client.isUsingRichClient);
   }
@@ -312,6 +334,7 @@ net.createServer( function (client) {
     client.dead = true;
     client.location = {};
     send(SOUND + S_DEATH, client);
+    client.score--;
     switch(cause) {
       case PLAYER_MOVED_WUMPUS:
         send(CLS, client);
@@ -320,6 +343,7 @@ net.createServer( function (client) {
         broadcast(C_Y + client.name + C_W + PLAYER_KILLED_BY_WUMPUS, client);
         break;
       case PLAYER_DEATH:
+        killer.score = killer.score + 2;
         send(CLS, client);
         send(KILLED_BY_PLAYER + C_Y + killer.name + C_W + '!', client);
         broadcast(C_Y + client.name + C_W + KILLED_BY +
@@ -447,8 +471,12 @@ net.createServer( function (client) {
   
   function resetGame() {
     initGame();
+    console.log('Scores:');
     for (var i in clients) {
       var c = clients[i];
+      console.log(c.name + ': ' + c.score);
+      sendScores(c);
+      send(STARTING_NEXT_ROUND, c);
       joinGame(c);
     }
   }
@@ -462,9 +490,10 @@ net.createServer( function (client) {
   }
   
   function resolveTurn(client) {
+    console.log('Resolve turn: ' + client.name);
     send(ROOM_RESET, client);
     send(ROOM_DESC, client);
-    var shooter = checkShot(client)
+    var shooter = checkShot(client);
     if (shooter != false) {
       killPlayer(client, PLAYER_DEATH, shooter);
     } else if (eatenByWumpus(client)) {
@@ -489,6 +518,22 @@ net.createServer( function (client) {
       }
     }
     client.hasCommand = false;
+  }
+  
+  function sendScores(client) {
+    send(SB + '\n', client);
+    send(SB + SCORES_TITLE, client);
+    send(SB + '\n', client);
+    var clientCopy = clients.slice(0);
+    clientCopy = clientCopy.sort(function(a,b) { return b.score - a.score });
+    for (var i in clientCopy) {
+      var c = clientCopy[i];
+      send(SB + SCORES_PADDING + C_R + c.score + C_B + ' - ' + C_Y + c.name, client);
+      if (i > 4) break;
+    }
+    send(SB + '\n', client);
+    send(SB + SCORES_PADDING + C_R + client.score + C_B + ' - '
+        + C_Y + client.name, client);
   }
   
   function shoot(client) {
