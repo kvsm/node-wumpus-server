@@ -36,7 +36,7 @@ var INTRO         =
 "===============================================================================\n\n" +
 "Press enter to begin...\n";
 var ROOM_DESC         = "You are in a dark cave in the lair.";
-var PROMPT            = "\nYour move?";
+var PROMPT            = "\nYour move ";
 
 var COMMAND_NOT_FOUND = "Sorry, I didn't understand that.";
 var ENTER_MOVE_DIR    = ";RYou must enter a direction (eg. MOVE NORTH).";
@@ -47,6 +47,7 @@ var INVALID_SHOT      = ";RYou can't shoot in that direction.";
 var WAITING_FOR_PLAYERS = "\n;GWaiting for other players to make their move...";
 var MOVED             = "You move ";
 var SHOT              = "You fire your shotgun to the ";
+var HEARDSHOT         = "You hear gunfire to the ";
 var KILLED_BY_WUMPUS  = "You have been ;Peaten;W by the ;RWumpus;W!";
 var KILLED_BY_PLAYER  = "You were killed by ";
 var PLAYER_KILLED_BY_WUMPUS = " was eaten by the ;RWumpus;W!";
@@ -89,6 +90,8 @@ var ROOM_RESET = ";Z";
 var CLS = ";U";
 var RICH_TAG = "@#";
 var SB = ";T";
+var ROOM_READY_MOVE = ";M";
+var PLAYERLIST = ";L";
 
 var DIRS = ['NORTH', 'SOUTH', 'EAST', 'WEST'];
 var ROOM_MAX_X = 3;
@@ -112,7 +115,7 @@ net.createServer( function (client) {
     if (clients.indexOf(client) == -1) {
       if (!client.ready) {
         dynamicAdjust();
-        init(client, data);
+        init(client, data, clients.length);
         send(INTRO, client);
         client.ready = true;
       } else {
@@ -137,7 +140,17 @@ net.createServer( function (client) {
             var shooter = checkShot(wumpus);
             if (shooter != false) {
               shooter.score = shooter.score + 7;
-              broadcast(SOUND + S_GUNSHOT);
+
+              for (var i in clients) {
+                var c = clients[i];
+                if (c != client) {
+                    // client already has the sound effect
+                    // due to them performing the shoot action in the first place
+                    // do not send two
+                    send(SOUND+S_GUNSHOT, c);
+                }
+              }
+
               broadcast(SOUND + S_WUMPUS_DEATH);
               send(SB + 'You' + SHOT_THE_WUMPUS + C_B + ' Way to go!', shooter);
               broadcast(SB + C_Y + shooter.name + C_W + SHOT_THE_WUMPUS, shooter);
@@ -156,13 +169,13 @@ net.createServer( function (client) {
               for (var i in clients) {
                 var c = clients[i];
                 if (c != undefined && !c.dead) {
-                  send(PROMPT, c);
+                  send(ROOM_READY_MOVE+PROMPT+C_Y+c.name, c);
                 }
               } 
             }
           }
         } else {
-          send(PROMPT, client);
+          send(ROOM_READY_MOVE+PROMPT+C_Y+client.name, client);
         }
       } else {
         joinGame(client);
@@ -174,7 +187,13 @@ net.createServer( function (client) {
     console.log('Player ' + client.name + ' (' + client.addr + ') diconnected');
     if ( clients.indexOf(client) != -1 ) {
       clients.splice(clients.indexOf(client), 1);
-      queueBroadcast(C_Y + client.name + C_W + LEFT);
+      for (var i in clients) {
+          var c = clients[i];
+          if (c.name != client.name) {
+            send(C_Y + client.name + C_W + LEFT);
+          }
+        }
+
       if (checkClientCommands()) {
         for (var i in clients) {
           var c = clients[i];
@@ -213,7 +232,7 @@ net.createServer( function (client) {
   function checkBoundaries(direction) {
     switch(direction) {
       case 'NORTH':
-        if (client.location.y + 1 > ROOM_MAX_Y) {
+        if (client.location.y + 1 >= ROOM_MAX_Y) {
           return false;
         }
         break;
@@ -223,7 +242,7 @@ net.createServer( function (client) {
         }
         break;
       case 'EAST':
-        if (client.location.x + 1 > ROOM_MAX_X) {
+        if (client.location.x + 1 >= ROOM_MAX_X) {
           return false;
         }
         break;
@@ -290,15 +309,21 @@ net.createServer( function (client) {
     }
   }  
   
-  function init(client, data) {
+  function init(client, data, num) {
     var name = data.toString().replace('\r\n','');
+    
     if (name.startsWith(RICH_TAG)) {
       client.name = name.substring(2);
       client.isUsingRichClient = true;
     } else {
-      client.name = name;
+      client.name = name;   
       client.isUsingRichClient = false;
     }
+
+    if (client.name == "\n") {
+        client.name = "Player "+(num+1)+"\n";
+    }
+
     client.score = 0;
     console.log('Client ' + client.addr + ' identified as ' +
         client.name + ', using rich client: ' + client.isUsingRichClient);
@@ -327,7 +352,7 @@ net.createServer( function (client) {
     }
     resolveTurn(client);
     send(SOUND + S_START, client);
-    send(PROMPT, client);
+    send(PROMPT+C_Y+client.name, client);
   }
   
   function killPlayer(client, cause, killer) {
@@ -453,6 +478,14 @@ net.createServer( function (client) {
           }
         }
         break;
+      case 'PLAYERS':
+        var plist = "";
+        for (var i in clients) {
+           var c = clients[i];
+           plist += "|"+C_Y+c.name+"|"+C_P+c.addr;
+        }
+        send(PLAYERLIST+plist, client);
+        break;
       default:
         send(COMMAND_NOT_FOUND, client);
     }
@@ -556,7 +589,35 @@ net.createServer( function (client) {
     }
     client.target = loc;
     console.log(client.name + ' target: ' + sys.inspect(client.target));
-    queueBroadcast(SOUND + S_GUNSHOT, null);
+
+    for (var i in clients) {
+      var c = clients[i];
+      if (c !== client) {
+        if (client.location.x == c.location.x && client.location.y == c.location.y) {
+            send(SOUND + S_GUNSHOT, c);
+        } else {
+            // send gunshot with panning and volume
+            var dx = c.location.x - client.location.x; 
+            var dy = c.location.y - client.location.y;
+            send(SOUND + S_GUNSHOT+"|"+dx+","+dy, c);
+            if (!client.isUsingRichClient) {
+                if (dx < 0) {
+                    send(C_G + HEARDSHOT + "WEST", client);
+                } else if (dx > 0) {
+                    send(C_G + HEARDSHOT + "EAST", client);
+                } else if (dy < 0) {
+                    send(C_G + HEARDSHOT + "SOUTH", client);
+                } else if (dy > 0) {
+                    send(C_G + HEARDSHOT + "NORTH", client);
+                }
+            }
+        }
+      } else {
+        // still send own shotgun noise
+        send(SOUND + S_GUNSHOT, client);
+      }
+    }
+
     send('\n' + C_G + SHOT + client.command[1] + '.', client);
   }
   
