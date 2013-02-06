@@ -184,7 +184,7 @@ net.createServer( function (client) {
   });
   
   client.on('end', function () {
-    console.log('Player ' + client.name + ' (' + client.addr + ') diconnected');
+    console.log('Player ' + client.name + ' (' + client.addr + ') disconnected');
     if ( clients.indexOf(client) != -1 ) {
       clients.splice(clients.indexOf(client), 1);
       for (var i in clients) {
@@ -561,12 +561,21 @@ net.createServer( function (client) {
     clientCopy = clientCopy.sort(function(a,b) { return b.score - a.score });
     for (var i in clientCopy) {
       var c = clientCopy[i];
-      send(SB + SCORES_PADDING + C_R + c.score + C_B + ' - ' + C_Y + c.name, client);
+      if (!client.isUsingRichClient) {
+          send(SB + SCORES_PADDING + C_R + c.score + C_B + ' - ' + C_Y + c.name, client);
+      } else {
+          send(SB + C_R + c.score + C_B + ' - ' + C_Y + c.name, client);
+      }
       if (i > 4) break;
     }
     send(SB + '\n', client);
-    send(SB + SCORES_PADDING + C_R + client.score + C_B + ' - '
+    if (!client.isUsingRichClient) {
+        send(SB + SCORES_PADDING + C_R + client.score + C_B + ' - '
         + C_Y + client.name, client);
+    } else {
+        send(SB + C_R + client.score + C_B + ' - '
+        + C_Y + client.name, client);
+    }
   }
   
   function shoot(client) {
