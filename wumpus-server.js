@@ -17,19 +17,40 @@ var JOINED        = " joined the game!";
 var LEFT          = " left the game.\n";
 var INTRO         = 
 "===============================================================================\n\n" +
-";BHOW TO PLAY:\n\n" +
 ";WIn this game, you must enter the lair and hunt the ;Rdeadly Wumpus;W!\n" + 
 ";GScore;W points by shooting the ;RWumpus;W and other ;Yplayers;W with your shotgun.\n" +
 ";RLose;W points for getting shot by ;Yplayers;W or eaten by the ;RWumpus;W.\n\n" +
-";BCOMMANDS:\n\n" +
-";YMOVE <DIRECTION>;W  - Move in the specified direction.\n" +
-";YSHOOT <DIRECTION>;W - Shoot in the specified direction.\n\n" +
-"Or use the ;YARROW KEYS;W to move and ;YSHIFT/CTRL + ARROW KEYS;W to shoot.\n" +
-"Press ;YF1;W to view the scoreboard (scores updated at end of round).\n\n" +
+";BMOVING:\n\n" +
+";YMOVE <DIRECTION>;W  - Move in the direction (NORTH, SOUTH, EAST, WEST)\n" +
+"or ;YARROW KEYS;W < > ^ v\n"+
+"or ;YCONTROLLER;W < > ^ v\n\n"+
+";BSHOOTING:\n\n" +
+";YSHOOT <DIRECTION>;W - Shoot in the specified direction.\n" +
+"or ;YSHIFT/CTRL + ARROW KEYS\n" +
+"or ;YCONTROLLER FIRE + < > ^ v ;W to shoot.\n" +
+";BFUNCTION KEYS:\n\n" +
+";YF1;W to view the scoreboard (scores updated at end of round).\n" +
+";YF2;W for a player list.\n" +
+";YF3;W to toggle debug mode.\n\n" +
 ";BHINTS:\n\n" +
 "- The ;RWumpus;W can move!\n" +
 "- Try playing with headphones - some sound effects are positional...\n" +
 "- ;PPro;W players shut their eyes. :)\n\n" +
+";BCREDITS:\n\n" +
+"Authors: Peter D Bell, Kevin Smith, Martyn Rendall, Callum Dryden\n" +
+";Ghttp://globalgamejam.org/2013/hunt-wumpus-global-edition\n\n" +
+"===============================================================================\n\n" +
+"Press enter to begin...\n";
+var INTROTELNET    = 
+"===============================================================================\n\n" +
+";WIn this game, you must enter the lair and hunt the ;Rdeadly Wumpus;W!\n" + 
+";GScore;W points by shooting the ;RWumpus;W and other ;Yplayers;W with your shotgun.\n" +
+";RLose;W points for getting shot by ;Yplayers;W or eaten by the ;RWumpus;W.\n\n" +
+";YMOVE <DIRECTION>;W  - Move in the direction (NORTH, SOUTH, EAST, WEST)\n\n" +
+";YSHOOT <DIRECTION>;W - Shoot in the specified direction.\n\n" +
+";BHINTS:\n\n" +
+"- The ;RWumpus;W can move!\n" +
+"- Try playing with the Java client for positional audio and controller support.\n\n" +
 ";BCREDITS:\n\n" +
 "Authors: Peter D Bell, Kevin Smith, Martyn Rendall, Callum Dryden\n" +
 ";Ghttp://globalgamejam.org/2013/hunt-wumpus-global-edition\n\n" +
@@ -116,7 +137,12 @@ net.createServer( function (client) {
       if (!client.ready) {
         dynamicAdjust();
         init(client, data, clients.length);
-        send(INTRO, client);
+        send(CLS, client);
+        if (!client.isUsingRichClient) {
+            send(INTROTELNET, client);
+        } else {
+            send(INTRO, client);
+        }
         client.ready = true;
       } else {
         queueBroadcast(C_Y + client.name + C_W + JOINED + ' ('+ (clients.length + 1) +' players connected)', client);
