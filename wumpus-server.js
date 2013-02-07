@@ -87,7 +87,7 @@ var WUMPUS_SNEAK      =
 ";RWumpus;W has hunted ;Yyou;W!";
 var STARTING_NEXT_ROUND = "\n;GStarting the ;Ynext round;G! (;YF1;G to review scores)\n\n";
 var SCORES_TITLE      = 
-";B================================;YSCORES;B===============================\n";
+";B===============================;YSCORES;B===============================\n";
 var SCORES_PADDING    = "                             ";
 
 var S_HEARTBEAT_LOUD  = 0;
