@@ -234,8 +234,8 @@ shoot = (client) ->
         send Strings.SOUND + S_GUNSHOT, c
       else 
         # send gunshot with panning and volume
-        dx = c.location.x - client.location.x 
-        dy = c.location.y - client.location.y
+        dx = client.location.x - c.location.x
+        dy = client.location.y - c.location.y
         send Strings.SOUND + S_GUNSHOT+"|"+dx+","+dy, c
         unless client.isUsingRichClient
           if dx < 0
