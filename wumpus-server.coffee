@@ -112,7 +112,7 @@ initGame = ->
   console.log "Initialising game..."
   console.log "Placing Wumpus..."
   wumpus.location = getRandomLocation false
-  console.log "Wumpus placed at #{ sys.inspect wumpus.location }" 
+  console.log "Wumpus placed at #{ sys.inspect wumpus.location }"
   resetTargets()
   
 joinGame = (client) ->
@@ -171,8 +171,9 @@ parse = (command, client) ->
           else
             send Strings.INVALID_SHOT, client
     when 'PLAYERS'
+      plist = ""
       for c in clients
-        plist += "|"+C_Y+c.name+"|"+C_P+c.addr
+        plist += "|" + Strings.C_Y + c.name+"|" + Strings.C_P + c.addr + "\n"
       send Strings.PLAYERLIST + plist, client
     else send Strings.COMMAND_NOT_FOUND, client
   return
@@ -228,22 +229,23 @@ shoot = (client) ->
   console.log "#{ client.name } target: #{ sys.inspect client.target }"
 
   for c in clients
-    if client.location.x is c.location.x and client.location.y is c.location.y
-      send Strings.SOUND + S_GUNSHOT, c
-    else 
-      # send gunshot with panning and volume
-      dx = c.location.x - client.location.x 
-      dy = c.location.y - client.location.y
-      send Strings.SOUND + S_GUNSHOT+"|"+dx+","+dy, c
-      unless client.isUsingRichClient
-        if dx < 0
-          send Strings.C_G + Strings.HEARDSHOT + "WEST", client
-        else if dx > 0
-          send Strings.C_G + Strings.HEARDSHOT + "EAST", client
-        else if dy < 0
-          send Strings.C_G + Strings.HEARDSHOT + "SOUTH", client
-        else if dy > 0
-          send Strings.C_G + Strings.HEARDSHOT + "NORTH", client
+    unless c.dead
+      if client.location.x is c.location.x and client.location.y is c.location.y
+        send Strings.SOUND + S_GUNSHOT, c
+      else 
+        # send gunshot with panning and volume
+        dx = c.location.x - client.location.x 
+        dy = c.location.y - client.location.y
+        send Strings.SOUND + S_GUNSHOT+"|"+dx+","+dy, c
+        unless client.isUsingRichClient
+          if dx < 0
+            send Strings.C_G + Strings.HEARDSHOT + "WEST", client
+          else if dx > 0
+            send Strings.C_G + Strings.HEARDSHOT + "EAST", client
+          else if dy < 0
+            send Strings.C_G + Strings.HEARDSHOT + "SOUTH", client
+          else if dy > 0
+            send Strings.C_G + Strings.HEARDSHOT + "NORTH", client
   send '\n' + Strings.C_G + Strings.SHOT + client.command[1] + '.', client
   return
   
@@ -382,7 +384,7 @@ sendScores = (client) ->
   return
   
 send = (message, client) ->
-  if client? 
+  if client?
     unless message.endsWith '\n'
       message = "#{ message }\n"
     message = stripCodes message unless client.isUsingRichClient
