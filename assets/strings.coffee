@@ -1,4 +1,4 @@
-exports.WELCOME       = "\nWelcome to HUNT THE WUMPUS Global Edition!\nPlease enter your name: \n"
+exports.WELCOME       = "\nWelcome to HUNT THE WUMPUS Global Edition v1.4.2!\nPlease enter your name: \n"
 exports.JOINED        = " joined the game!"
 exports.LEFT          = " left the game.\n"
 exports.INTRO         = 
@@ -8,12 +8,12 @@ exports.INTRO         =
 ";RLose;W points for getting shot by ;Yplayers;W or eaten by the ;RWumpus;W.\n\n" +
 ";BMOVING:\n\n" +
 ";YMOVE <DIRECTION>;W  - Move in the direction (NORTH, SOUTH, EAST, WEST)\n" +
-"or ;YARROW KEYS;W < > ^ v\n"+
-"or ;YCONTROLLER;W < > ^ v\n\n"+
+"or ;YARROW KEYS;W U/D/L/R\n"+
+"or ;YCONTROLLER;W U/D/L/R\n\n"+
 ";BSHOOTING:\n\n" +
 ";YSHOOT <DIRECTION>;W - Shoot in the specified direction.\n" +
 "or ;YSHIFT/CTRL + ARROW KEYS\n" +
-"or ;YCONTROLLER FIRE + < > ^ v ;W to shoot.\n" +
+"or ;YCONTROLLER FIRE + U/D/L/R ;W to shoot.\n" +
 ";BFUNCTION KEYS:\n\n" +
 ";YF1;W to view the scoreboard (scores updated at end of round).\n" +
 ";YF2;W for a player list.\n" +
