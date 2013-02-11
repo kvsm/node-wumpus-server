@@ -58,7 +58,7 @@ server = net.createServer (client) ->
             shooter = checkShot wumpus
             if shooter
               shooter.score += 7
-              send Strings.SOUND + S_GUNSHOT, c for c in clients when c isnt shooter
+              # send Strings.SOUND + S_GUNSHOT, c for c in clients when c isnt shooter
               broadcast Strings.SOUND + S_WUMPUS_DEATH
               send Strings.SB + "You#{ Strings.SHOT_THE_WUMPUS + Strings.C_B } Way to go!", shooter
               broadcast Strings.SB + Strings.C_Y + shooter.name + Strings.C_W + Strings.SHOT_THE_WUMPUS, shooter
