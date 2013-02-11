@@ -258,18 +258,19 @@ resolveTurn = (client) ->
     killPlayer client, PLAYER_DEATH, shooter
   else if eatenByWumpus client
     killPlayer client, PLAYER_MOVED_WUMPUS
-  for c in clients
-    if c isnt client
-      if client.location.x is c.location.x and client.location.y is c.location.y
-        send Strings.C_Y + c.name + Strings.C_W + Strings.STANDING_HERE, client
-      else
-        # check if we should play footsteps (neighbouring)
-        dx = c.location.x - client.location.x 
-        dy = c.location.y - client.location.y
-        abs_dx = if dx < 0 then dx * -1 else dx
-        abs_dy = if dy < 0 then dy * -1 else dy
-        if (abs_dx is 0 and abs_dy is 1) or (abs_dx is 1 and abs_dy is 0)
-          send Strings.SOUND + S_FOOTSTEPS+"|"+dx+","+dy, client
+  unless client.dead
+    for c in clients
+      if c isnt client
+        if client.location.x is c.location.x and client.location.y is c.location.y
+          send Strings.C_Y + c.name + Strings.C_W + Strings.STANDING_HERE, client
+        else
+          # check if we should play footsteps (neighbouring)
+          dx = c.location.x - client.location.x 
+          dy = c.location.y - client.location.y
+          abs_dx = if dx < 0 then dx * -1 else dx
+          abs_dy = if dy < 0 then dy * -1 else dy
+          if (abs_dx is 0 and abs_dy is 1) or (abs_dx is 1 and abs_dy is 0)
+            send Strings.SOUND + S_FOOTSTEPS+"|"+dx+","+dy, client
   client.hasCommand = false
   return
 
