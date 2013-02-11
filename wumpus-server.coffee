@@ -260,7 +260,7 @@ resolveTurn = (client) ->
     killPlayer client, PLAYER_MOVED_WUMPUS
   unless client.dead
     for c in clients
-      if c isnt client
+      if c isnt client and not c.dead
         if client.location.x is c.location.x and client.location.y is c.location.y
           send Strings.C_Y + c.name + Strings.C_W + Strings.STANDING_HERE, client
         else
