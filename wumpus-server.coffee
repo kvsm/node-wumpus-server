@@ -55,7 +55,7 @@ server = net.createServer (client) ->
           process client
         else
           send Strings.ROOM_READY_MOVE + Strings.PROMPT + Strings.C_Y + client.name, client
-          client.timeout = setTimeout setAFK, 10000, c if clients.length > 1
+          client.timeout = setTimeout setAFK, 10000, client if clients.length > 1
       else
         joinGame client
   
