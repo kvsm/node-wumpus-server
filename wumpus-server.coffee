@@ -55,7 +55,7 @@ server = net.createServer (client) ->
           process client
         else
           send Strings.ROOM_READY_MOVE + Strings.PROMPT + Strings.C_Y + client.name, client
-          client.timeout = setTimeout setAFK, 10000, client if clients.length > 1
+          client.timeout = setTimeout setAFK, 10000, client if clients.length > 1 and not client.dead
       else
         joinGame client
   
@@ -112,7 +112,7 @@ joinGame = (client) ->
   resolveTurn client
   send Strings.SOUND + S_START, client
   send Strings.PROMPT + Strings.C_Y + client.name, client
-  client.timeout = setTimeout setAFK, 10000, client if clients.length > 1
+  client.timeout = setTimeout setAFK, 10000, client if clients.length > 1 and not client.dead
   
 resetGame = ->
   initGame()
@@ -142,7 +142,7 @@ process = (client) ->
       for c in clients
         unless c.dead
           resolveTurn c
-          c.timeout = setTimeout setAFK, 10000, c if clients.length > 1
+          c.timeout = setTimeout setAFK, 10000, c if clients.length > 1 and not c.dead
       sendQueuedBroadcasts()
       sendQueuedClientMessages()
       resetTargets()
@@ -294,9 +294,9 @@ resolveTurn = (client) ->
   return
 
 killPlayer = (client, cause, killer) ->
+  clearTimeout client.timeout
   unless client.dead
     client.dead = true
-    clearTimeout client.timeout
     client.location = {}
     send Strings.SOUND + S_DEATH, client
     client.score--
