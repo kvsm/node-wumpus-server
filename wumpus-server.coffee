@@ -46,20 +46,22 @@ server = net.createServer (client) ->
       else
         queueBroadcast Strings.C_Y + client.name + Strings.C_W + Strings.JOINED + " (#{ clients.length + 1 } players connected)", client
         joinGame client
-    else 
+    else
       unless client.dead
         command = data.toString().replace '\r\n', ''
         parse command, client
+        clearTimeout client.timeout
         if client.hasCommand
-          clearTimeout(client.timeout)
           process client
         else
           send Strings.ROOM_READY_MOVE + Strings.PROMPT + Strings.C_Y + client.name, client
+          client.timeout = setTimeout setAFK, 10000, c if clients.length > 1
       else
         joinGame client
   
   client.on 'end', ->
     console.log "Player #{ client.name } (#{ client.addr }) disconnected"
+    clearTimeout client.timeout
     if client in clients
       clients.splice clients.indexOf(client), 1
       for c in clients
@@ -100,13 +102,17 @@ joinGame = (client) ->
   client.dead = false
   client.target = {}
   client.queue = []
-  client.location = getRandomLocation true
-  console.log "#{ client.name } added at #{ sys.inspect client.location }"
+  if client.afk
+    client.afk = false
+  else
+    client.location = getRandomLocation true
+    console.log "#{ client.name } added at #{ sys.inspect client.location }"
+  clients[0].timeout = setTimeout setAFK, 10000, clients[0] if clients.length is 1 and not clients[0].dead
   clients.push client unless client in clients
   resolveTurn client
   send Strings.SOUND + S_START, client
   send Strings.PROMPT + Strings.C_Y + client.name, client
-  client.timeout = setTimeout(setAFK, 10000, client)
+  client.timeout = setTimeout setAFK, 10000, client if clients.length > 1
   
 resetGame = ->
   initGame()
@@ -136,7 +142,7 @@ process = (client) ->
       for c in clients
         unless c.dead
           resolveTurn c
-          c.timeout = setTimeout(setAFK, 10000, c)
+          c.timeout = setTimeout setAFK, 10000, c if clients.length > 1
       sendQueuedBroadcasts()
       sendQueuedClientMessages()
       resetTargets()
@@ -147,6 +153,7 @@ process = (client) ->
 setAFK = (client) ->
   send Strings.AFK, client
   client.dead = true
+  client.afk = true
   process client
   
 checkClientCommands = ->
@@ -289,6 +296,7 @@ resolveTurn = (client) ->
 killPlayer = (client, cause, killer) ->
   unless client.dead
     client.dead = true
+    clearTimeout client.timeout
     client.location = {}
     send Strings.SOUND + S_DEATH, client
     client.score--
