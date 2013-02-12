@@ -51,28 +51,8 @@ server = net.createServer (client) ->
         command = data.toString().replace '\r\n', ''
         parse command, client
         if client.hasCommand
-          unless checkClientCommands()
-            send Strings.WAITING_FOR_PLAYERS, client
-          else
-            processCommands c for c in clients when not c.dead
-            shooter = checkShot wumpus
-            if shooter
-              shooter.score += 7
-              # send Strings.SOUND + S_GUNSHOT, c for c in clients when c isnt shooter
-              broadcast Strings.SOUND + S_WUMPUS_DEATH
-              send Strings.SB + "You#{ Strings.SHOT_THE_WUMPUS + Strings.C_B } Way to go!", shooter
-              broadcast Strings.SB + Strings.C_Y + shooter.name + Strings.C_W + Strings.SHOT_THE_WUMPUS, shooter
-              resetGame()
-            else
-              moveWumpus()
-              for c in clients
-                resolveTurn c unless c.dead
-              sendQueuedBroadcasts()
-              sendQueuedClientMessages()
-              resetTargets()
-              for c in clients
-                if c? and not c.dead
-                  send Strings.ROOM_READY_MOVE + Strings.PROMPT + Strings.C_Y + c.name, c
+          clearTimeout(client.timeout)
+          process client
         else
           send Strings.ROOM_READY_MOVE + Strings.PROMPT + Strings.C_Y + client.name, client
       else
@@ -126,6 +106,7 @@ joinGame = (client) ->
   resolveTurn client
   send Strings.SOUND + S_START, client
   send Strings.PROMPT + Strings.C_Y + client.name, client
+  client.timeout = setTimeout(setAFK, 10000, client)
   
 resetGame = ->
   initGame()
@@ -136,6 +117,37 @@ resetGame = ->
     send Strings.STARTING_NEXT_ROUND, c
     joinGame c
   return
+  
+process = (client) ->
+  unless checkClientCommands()
+    send Strings.WAITING_FOR_PLAYERS, client unless client.dead
+  else
+    processCommands c for c in clients when not c.dead
+    shooter = checkShot wumpus
+    if shooter
+      shooter.score += 7
+      # send Strings.SOUND + S_GUNSHOT, c for c in clients when c isnt shooter
+      broadcast Strings.SOUND + S_WUMPUS_DEATH
+      send Strings.SB + "You#{ Strings.SHOT_THE_WUMPUS + Strings.C_B } Way to go!", shooter
+      broadcast Strings.SB + Strings.C_Y + shooter.name + Strings.C_W + Strings.SHOT_THE_WUMPUS, shooter
+      resetGame()
+    else
+      moveWumpus()
+      for c in clients
+        unless c.dead
+          resolveTurn c
+          c.timeout = setTimeout(setAFK, 10000, c)
+      sendQueuedBroadcasts()
+      sendQueuedClientMessages()
+      resetTargets()
+      for c in clients
+        if c? and not c.dead
+          send Strings.ROOM_READY_MOVE + Strings.PROMPT + Strings.C_Y + c.name, c
+  
+setAFK = (client) ->
+  send Strings.AFK, client
+  client.dead = true
+  process client
   
 checkClientCommands = ->
   for client in clients

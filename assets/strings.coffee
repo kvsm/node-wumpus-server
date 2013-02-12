@@ -75,6 +75,9 @@ exports.STARTING_NEXT_ROUND = "\n;GStarting the ;Ynext round;G! (;YF1;G to revie
 exports.SCORES_TITLE      = 
 ";B===============================;YSCORES;B===============================\n"
 exports.SCORES_PADDING    = "                             "
+exports.AFK               =
+"\nYou have been inactive for 10 seconds and are now ;BAFK;W.\n" +
+"Press Enter to rejoin the game..."
 exports.C_W = ";W"
 exports.C_Y = ";Y"
 exports.C_R = ";R"
