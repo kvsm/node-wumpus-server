@@ -71,7 +71,10 @@ server = net.createServer (client) ->
           unless c.dead
             processCommands c
       dynamicAdjust()
-    client = undefined
+    
+  client.on 'error', ->
+    client.end()
+    client.destroy()
 
 server.listen 5000
 
